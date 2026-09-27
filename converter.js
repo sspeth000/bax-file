@@ -1,331 +1,347 @@
 /*
-    BAXL Converter
-    ---------------
-    File <-> BAXL
+===========================================================
+BAXL ALPHABET
+===========================================================
 
-    The BAXL alphabet is:
+Byte 00 -> U+0020
+Byte 01 -> U+0021
+...
+Byte 5E -> U+007E
 
-    U+0020 - U+007E
-    U+00A1 - U+00FF
-    U+0100 - U+0141
+Byte 5F -> U+00A1
+...
+Byte BD -> U+00FF
 
-    This gives us a reversible text representation of
-    arbitrary binary data.
+Byte BE -> U+0100
+...
+Byte FF -> U+0141
 */
 
+const alphabet = [
+  ...Array.from(
+    { length: 0x007E - 0x0020 + 1 },
+    (_, i) => String.fromCodePoint(0x0020 + i)
+  ),
 
-// ---------------------------------------------------------
-// BAXL ALPHABET
-// ---------------------------------------------------------
+  ...Array.from(
+    { length: 0x00FF - 0x00A1 + 1 },
+    (_, i) => String.fromCodePoint(0x00A1 + i)
+  ),
 
-const alphabet = [];
+  ...Array.from(
+    { length: 0x0141 - 0x0100 + 1 },
+    (_, i) => String.fromCodePoint(0x0100 + i)
+  )
+].join("");
 
-for (let i = 0x0020; i <= 0x007E; i++) {
-    alphabet.push(String.fromCharCode(i));
+
+if (alphabet.length !== 256) {
+  throw new Error(
+    "BAXL alphabet must contain exactly 256 characters."
+  );
 }
 
-for (let i = 0x00A1; i <= 0x00FF; i++) {
-    alphabet.push(String.fromCharCode(i));
-}
 
-for (let i = 0x0100; i <= 0x0141; i++) {
-    alphabet.push(String.fromCharCode(i));
-}
-
-
-// ---------------------------------------------------------
-// CREATE REVERSE LOOKUP
-// ---------------------------------------------------------
+/*
+===========================================================
+CREATE REVERSE LOOKUP TABLE
+===========================================================
+*/
 
 const reverseAlphabet = new Map();
 
-alphabet.forEach((character, index) => {
-    reverseAlphabet.set(character, index);
-});
+for (let i = 0; i < alphabet.length; i++) {
+  reverseAlphabet.set(alphabet[i], i);
+}
 
 
-// ---------------------------------------------------------
-// ENCODE BINARY → BAXL
-// ---------------------------------------------------------
+/*
+===========================================================
+ENCODER
+===========================================================
+*/
 
 function encodeBAXL(bytes) {
 
-    let output = "";
+  let output = "";
 
-    for (const byte of bytes) {
+  for (const byte of bytes) {
+    output += alphabet[byte];
+  }
 
-        output += alphabet[byte];
-
-    }
-
-    return output;
+  return output;
 }
 
 
-// ---------------------------------------------------------
-// DECODE BAXL → BINARY
-// ---------------------------------------------------------
+/*
+===========================================================
+DECODER
+===========================================================
+*/
 
 function decodeBAXL(text) {
 
-    const bytes = new Uint8Array(text.length);
+  const bytes = new Uint8Array(text.length);
 
-    for (let i = 0; i < text.length; i++) {
+  for (let i = 0; i < text.length; i++) {
 
-        const character = text[i];
+    const character = text[i];
 
-        const value = reverseAlphabet.get(character);
+    const byte = reverseAlphabet.get(character);
 
-        if (value === undefined) {
-            throw new Error(
-                `Invalid BAXL character at position ${i}: ${character}`
-            );
-        }
-
-        bytes[i] = value;
+    if (byte === undefined) {
+      throw new Error(
+        `Invalid BAXL character at position ${i}: ${JSON.stringify(character)}`
+      );
     }
 
-    return bytes;
+    bytes[i] = byte;
+  }
+
+  return bytes;
 }
 
 
-// ---------------------------------------------------------
-// DOWNLOAD BLOB
-// ---------------------------------------------------------
+/*
+===========================================================
+DOWNLOAD HELPER
+===========================================================
+*/
 
 function downloadBlob(blob, filename) {
 
-    const url = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
+  const link = document.createElement("a");
 
-    link.href = url;
-    link.download = filename;
+  link.href = url;
+  link.download = filename;
 
-    document.body.appendChild(link);
+  document.body.appendChild(link);
 
-    link.click();
+  link.click();
 
-    link.remove();
+  link.remove();
 
-    URL.revokeObjectURL(url);
+  URL.revokeObjectURL(url);
 }
 
 
-// ---------------------------------------------------------
-// FILE → BAXL
-// ---------------------------------------------------------
+/*
+===========================================================
+ENCODE BUTTON
+===========================================================
+*/
 
 document
-    .getElementById("encodeButton")
-    .addEventListener("click", async () => {
+  .getElementById("encodeButton")
+  .addEventListener("click", async () => {
 
-        const input =
-            document.getElementById("encodeFile");
+    const input = document.getElementById("encodeFile");
 
-        const file = input.files[0];
+    if (!input.files.length) {
+      alert("Choose a file first.");
+      return;
+    }
 
-        if (!file) {
-            alert("Choose a file first.");
-            return;
+    const file = input.files[0];
+
+    try {
+
+      const buffer = await file.arrayBuffer();
+
+      const bytes = new Uint8Array(buffer);
+
+      const baxl = encodeBAXL(bytes);
+
+      /*
+       * UTF-8 encoding.
+       */
+      const output = new TextEncoder().encode(baxl);
+
+      const blob = new Blob(
+        [output],
+        {
+          type: "text/plain;charset=utf-8"
         }
+      );
 
-        try {
+      downloadBlob(
+        blob,
+        file.name + ".baxl"
+      );
 
-            const buffer =
-                await file.arrayBuffer();
+    } catch (error) {
 
-            const bytes =
-                new Uint8Array(buffer);
+      console.error(error);
 
-            const baxl =
-                encodeBAXL(bytes);
+      alert(
+        "Encoding failed:\n" +
+        error.message
+      );
+    }
 
-            const blob =
-                new Blob([baxl], {
-                    type: "text/plain;charset=utf-8"
-                });
-
-            const filename =
-                file.name + ".baxl";
-
-            downloadBlob(blob, filename);
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert(
-                "Something went wrong while creating the BAXL file."
-            );
-        }
-    });
+  });
 
 
-// ---------------------------------------------------------
-// IMAGE TYPE DETECTION
-// ---------------------------------------------------------
+/*
+===========================================================
+DECODE BUTTON
+===========================================================
+*/
 
-function detectImageType(bytes) {
+document
+  .getElementById("decodeButton")
+  .addEventListener("click", async () => {
 
-    // JPEG
-    if (
-        bytes.length >= 3 &&
-        bytes[0] === 0xFF &&
-        bytes[1] === 0xD8 &&
-        bytes[2] === 0xFF
-    ) {
-        return "image/jpeg";
+    const input = document.getElementById("decodeFile");
+
+    const status = document.getElementById("status");
+
+    const preview = document.getElementById("preview");
+
+
+    if (!input.files.length) {
+
+      alert("Choose a .baxl file first.");
+
+      return;
     }
 
 
-    // PNG
-    if (
-        bytes.length >= 8 &&
+    const file = input.files[0];
+
+
+    try {
+
+      status.textContent = "Reading BAXL...";
+
+
+      /*
+       * Read the exact Unicode text.
+       */
+      const text = await file.text();
+
+
+      status.textContent = "Decoding BAXL...";
+
+
+      const bytes = decodeBAXL(text);
+
+
+      /*
+       * Remove .baxl from the filename.
+       */
+      let outputName = file.name;
+
+      if (outputName.toLowerCase().endsWith(".baxl")) {
+
+        outputName =
+          outputName.slice(0, -5);
+
+      }
+
+
+      /*
+       * Guess the original file type.
+       */
+      let mime = "application/octet-stream";
+
+
+      if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
+
+        mime = "image/jpeg";
+
+        if (!outputName.match(/\.(jpg|jpeg)$/i)) {
+          outputName += ".jpg";
+        }
+
+      }
+
+      else if (
         bytes[0] === 0x89 &&
         bytes[1] === 0x50 &&
         bytes[2] === 0x4E &&
-        bytes[3] === 0x47 &&
-        bytes[4] === 0x0D &&
-        bytes[5] === 0x0A &&
-        bytes[6] === 0x1A &&
-        bytes[7] === 0x0A
-    ) {
-        return "image/png";
-    }
+        bytes[3] === 0x47
+      ) {
 
+        mime = "image/png";
 
-    // GIF
-    if (
-        bytes.length >= 6 &&
+        if (!outputName.match(/\.png$/i)) {
+          outputName += ".png";
+        }
+
+      }
+
+      else if (
         bytes[0] === 0x47 &&
         bytes[1] === 0x49 &&
-        bytes[2] === 0x46 &&
-        bytes[3] === 0x38
-    ) {
-        return "image/gif";
+        bytes[2] === 0x46
+      ) {
+
+        mime = "image/gif";
+
+        if (!outputName.match(/\.gif$/i)) {
+          outputName += ".gif";
+        }
+
+      }
+
+
+      const blob = new Blob(
+        [bytes],
+        { type: mime }
+      );
+
+
+      /*
+       * Download reconstructed file.
+       */
+
+      downloadBlob(
+        blob,
+        outputName
+      );
+
+
+      /*
+       * Image preview.
+       */
+
+      if (mime.startsWith("image/")) {
+
+        const imageURL =
+          URL.createObjectURL(blob);
+
+        preview.src = imageURL;
+
+        preview.style.display = "block";
+
+      }
+
+
+      status.textContent =
+        "Decoded successfully!\n\n" +
+        "BAXL characters: " +
+        text.length.toLocaleString() +
+        "\n" +
+        "Recovered bytes: " +
+        bytes.length.toLocaleString() +
+        "\n" +
+        "Detected type: " +
+        mime;
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      preview.style.display = "none";
+
+      status.textContent =
+        "DECODING ERROR\n\n" +
+        error.message;
+
     }
 
-
-    return null;
-}
-
-
-// ---------------------------------------------------------
-// BAXL → ORIGINAL FILE
-// ---------------------------------------------------------
-
-document
-    .getElementById("decodeButton")
-    .addEventListener("click", async () => {
-
-        const input =
-            document.getElementById("decodeFile");
-
-        const file = input.files[0];
-
-        const status =
-            document.getElementById("status");
-
-        const preview =
-            document.getElementById("preview");
-
-
-        if (!file) {
-
-            alert("Choose a .baxl file first.");
-
-            return;
-        }
-
-
-        try {
-
-            status.textContent =
-                "Reading BAXL file...";
-
-
-            /*
-                IMPORTANT:
-
-                Read as text without trimming it.
-
-                Spaces are valid BAXL characters,
-                so trim() must NOT be used.
-            */
-
-            const text =
-                await file.text();
-
-
-            status.textContent =
-                "Decoding BAXL...";
-
-
-            const bytes =
-                decodeBAXL(text);
-
-
-            const imageType =
-                detectImageType(bytes);
-
-
-            let outputType =
-                imageType || "application/octet-stream";
-
-
-            let originalName =
-                file.name.replace(/\.baxl$/i, "");
-
-
-            const blob =
-                new Blob([bytes], {
-                    type: outputType
-                });
-
-
-            // -------------------------------------------------
-            // IMAGE PREVIEW
-            // -------------------------------------------------
-
-            if (imageType) {
-
-                const imageURL =
-                    URL.createObjectURL(blob);
-
-                preview.src = imageURL;
-
-                preview.style.display = "block";
-
-                status.textContent =
-                    "Image successfully recovered.";
-
-            } else {
-
-                preview.style.display = "none";
-
-                status.textContent =
-                    "File successfully recovered.";
-            }
-
-
-            // -------------------------------------------------
-            // DOWNLOAD
-            // -------------------------------------------------
-
-            downloadBlob(
-                blob,
-                originalName
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-            preview.style.display = "none";
-
-            status.textContent =
-                "Error: " + error.message;
-        }
-    });
+  });
