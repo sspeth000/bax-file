@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BAXL Encoder</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 700px;
+      margin: 60px auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .box {
+      border: 2px dashed #888;
+      border-radius: 12px;
+      padding: 30px;
+      margin-top: 25px;
+    }
+
+    button {
+      padding: 12px 20px;
+      margin-top: 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #status {
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
+
+    code {
+      background: #eee;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>BAXL Encoder</h1>
+
+  <p>
+    Convert any file into the BAXL 256-character alphabet.
+  </p>
+
+  <div class="box">
+    <input type="file" id="fileInput">
+    <br>
+    <button id="encodeButton">Encode to BAXL</button>
+
+    <div id="status"></div>
+  </div>
+
+<script>
+/*
+ * BAXL SAFE ALPHABET
+ *
+ * 0x00–0x5E  -> U+0020–U+007E
+ * 0x5F–0xBD  -> U+00A1–U+00FF
+ * 0xBE–0xFF  -> U+0100–U+0141
+ */
+
+const alphabet = [
+  ...Array.from(
+    { length: 0x007E - 0x0020 + 1 },
+    (_, i) => String.fromCodePoint(0x0020 + i)
+  ),
+
+  ...Array.from(
+    { length: 0x00FF - 0x00A1 + 1 },
+    (_, i) => String.fromCodePoint(0x00A1 + i)
+  ),
+
+  ...Array.from(
+    { length: 0x0141 - 0x0100 + 1 },
+    (_, i) => String.fromCodePoint(0x0100 + i)
+  )
+].join("");
+
+// Safety checks
+if (alphabet.length !== 256) {
+  throw new Error("BAXL alphabet does not contain exactly 256 characters.");
+}
+
+if (new Set(Array.from(alphabet)).size !== 256) {
+  throw new Error("BAXL alphabet contains duplicate characters.");
+}
+
+
+// Convert bytes -> BAXL
+function encodeBAXL(bytes) {
+  let output = "";
+
+  for (const byte of bytes) {
+    output += alphabet[byte];
+  }
+
+  return output;
+}
+
+
+document.getElementById("encodeButton").addEventListener("click", async () => {
+
+  const input = document.getElementById("fileInput");
+  const status = document.getElementById("status");
+
+  if (!input.files.length) {
+    status.textContent = "Choose a file first.";
+    return;
+  }
+
+  const file = input.files[0];
+
+  status.textContent = "Reading file...";
+
+  try {
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    status.textContent = "Encoding...";
+
+    const baxl = encodeBAXL(bytes);
+
+    // UTF-8 encode the BAXL text
+    const outputBytes = new TextEncoder().encode(baxl);
+
+    const blob = new Blob(
+      [outputBytes],
+      { type: "text/plain;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name + ".baxl";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+
+    status.textContent =
+      `Done!\n\n` +
+      `Original file: ${file.name}\n` +
+      `Original bytes: ${bytes.length.toLocaleString()}\n` +
+      `BAXL characters: ${baxl.length.toLocaleString()}\n` +
+      `Downloaded as: ${file.name}.baxl`;
+
+  } catch (error) {
+    console.error(error);
+    status.textContent = "Error: " + error.message;
+  }
+});
+</script>
+
+</body>
+</html>
