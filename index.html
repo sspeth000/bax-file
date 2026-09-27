@@ -1,98 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>BAX File / BAXL Converter</title>
+  <title>BAX File / BAXL Converter</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 30px;
-            background: #f4f4f4;
-            color: #222;
-        }
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
 
-        h1 {
-            text-align: center;
-        }
+    h1 {
+      text-align: center;
+    }
 
-        .box {
-            background: white;
-            padding: 25px;
-            margin-top: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+    .box {
+      border: 2px dashed #888;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 20px 0;
+    }
 
-        button {
-            padding: 10px 16px;
-            margin-top: 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            background: #222;
-            color: white;
-        }
+    button {
+      padding: 10px 18px;
+      margin-top: 12px;
+      cursor: pointer;
+      font-size: 15px;
+    }
 
-        button:hover {
-            background: #444;
-        }
+    #status {
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
 
-        #preview {
-            display: none;
-            max-width: 100%;
-            margin-top: 20px;
-            border-radius: 8px;
-        }
-
-        #status {
-            margin-top: 15px;
-            white-space: pre-wrap;
-        }
-    </style>
+    #preview {
+      max-width: 100%;
+      max-height: 500px;
+      margin-top: 20px;
+      display: none;
+    }
+  </style>
 </head>
 
 <body>
 
-    <h1>BAX File / BAXL Converter</h1>
+<h1>BAX / BAXL Converter</h1>
 
-    <div class="box">
-        <h2>Convert File → BAXL</h2>
+<div class="box">
+  <h2>Encode</h2>
 
-        <input type="file" id="encodeFile">
+  <input type="file" id="encodeFile">
 
-        <br>
+  <br>
 
-        <button id="encodeButton">
-            Convert to .baxl
-        </button>
-    </div>
+  <button id="encodeButton">
+    Convert to .baxl
+  </button>
+</div>
 
-    <div class="box">
-        <h2>Convert BAXL → File</h2>
+<div class="box">
+  <h2>Decode</h2>
 
-        <input
-            type="file"
-            id="decodeFile"
-            accept=".baxl"
-        >
+  <input type="file" id="decodeFile" accept=".baxl,.txt">
 
-        <br>
+  <br>
 
-        <button id="decodeButton">
-            Recover File
-        </button>
+  <button id="decodeButton">
+    Convert .baxl back to file
+  </button>
 
-        <div id="status"></div>
+  <div id="status"></div>
 
-        <img id="preview" alt="Recovered image preview">
-    </div>
+  <img id="preview">
+</div>
 
-    <script src="converter.js"></script>
+<script src="converter.js"></script>
 
 </body>
 </html>
