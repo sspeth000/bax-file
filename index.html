@@ -3,18 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BAXL Converter</title>
+
+    <title>BAX File / BAXL Converter</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px;
+            background: #f4f4f4;
+            color: #222;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            margin-top: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 10px 16px;
+            margin-top: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            background: #222;
+            color: white;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        #preview {
+            display: none;
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        #status {
+            margin-top: 15px;
+            white-space: pre-wrap;
+        }
+    </style>
 </head>
+
 <body>
 
-    <h1>BAXL Converter</h1>
+    <h1>BAX File / BAXL Converter</h1>
 
-    <input type="file" id="baxlFile" accept=".baxl">
+    <div class="box">
+        <h2>Convert File → BAXL</h2>
 
-    <br><br>
+        <input type="file" id="encodeFile">
 
-    <img id="outputImage" alt="Converted image" style="max-width: 100%;">
+        <br>
+
+        <button id="encodeButton">
+            Convert to .baxl
+        </button>
+    </div>
+
+    <div class="box">
+        <h2>Convert BAXL → File</h2>
+
+        <input
+            type="file"
+            id="decodeFile"
+            accept=".baxl"
+        >
+
+        <br>
+
+        <button id="decodeButton">
+            Recover File
+        </button>
+
+        <div id="status"></div>
+
+        <img id="preview" alt="Recovered image preview">
+    </div>
 
     <script src="converter.js"></script>
+
 </body>
 </html>
